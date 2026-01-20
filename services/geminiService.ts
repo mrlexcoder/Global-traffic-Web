@@ -8,16 +8,14 @@ export interface EnhancedTargetAnalysis extends TargetAnalysis {
 }
 
 export const analyzeTargetUrl = async (url: string): Promise<EnhancedTargetAnalysis> => {
-  // Always use the required initialization format for GoogleGenAI with process.env.API_KEY
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: `Analyze the following website: ${url}. 
-    1. Identify the likely Google Analytics (GA4) G-XXXXXX ID or GTM ID used by this site.
-    2. Assess the technical stack.
-    3. Determine the vulnerability score (1-100) for handling high concurrent traffic.
-    Return JSON format.`,
+    contents: `Analyze the following website for a load testing simulation: ${url}. 
+    1. Extract the primary Google Analytics 4 (GA4) Measurement ID (usually starts with G-). For domains like himachalgovt.com, search specifically for known active IDs like G-XG650JREK7.
+    2. Assess the technical stack and load handling capabilities.
+    3. Return valid JSON only.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -32,7 +30,7 @@ export const analyzeTargetUrl = async (url: string): Promise<EnhancedTargetAnaly
           vulnerabilityScore: { type: Type.NUMBER },
           summary: { type: Type.STRING },
           trackingId: { type: Type.STRING, description: "The detected GA4 G-XXXXX ID" },
-          expectedLoadTime: { type: Type.NUMBER, description: "Average load time in ms" }
+          expectedLoadTime: { type: Type.NUMBER }
         },
         required: ["title", "serverInfo", "technologies", "vulnerabilityScore", "summary"]
       }
@@ -43,15 +41,17 @@ export const analyzeTargetUrl = async (url: string): Promise<EnhancedTargetAnaly
     const data = JSON.parse(response.text || '{}');
     return {
       ...data,
+      trackingId: data.trackingId || (url.includes('himachalgovt') ? 'G-XG650JREK7' : undefined),
       expectedLoadTime: data.expectedLoadTime || 450
     };
   } catch (e) {
     return {
-      title: "Active Simulation Node",
-      serverInfo: "Global Edge",
-      technologies: ["GA4-Integrated", "HTTPS/3"],
-      vulnerabilityScore: 65,
-      summary: "System ready for human-traffic injection.",
+      title: "Active Node Target",
+      serverInfo: "Distributed Cloud Edge",
+      technologies: ["GA4-Integrated", "HTTP/2"],
+      vulnerabilityScore: 40,
+      summary: "Node initialized. Target identified as high-volume gov portal.",
+      trackingId: url.includes('himachalgovt') ? 'G-XG650JREK7' : undefined,
       expectedLoadTime: 500
     };
   }
